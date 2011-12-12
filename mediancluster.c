@@ -1,16 +1,27 @@
 #include<stdio.h>
-#include<stdlib.h>
 #include<math.h>
+#include<stdlib.h>
 #include"kmeans.h"
 
-void means_cluster(int clust_num,saved *save)
+typedef struct
+{
+    double a;
+    int index;
+} Array;
+
+int cmp(const void*x,const void *y)
+{
+    return ((Array*)x)->a > ((Array*)y)->a ?1:-1;
+}
+
+void median_cluster(int clust_num,saved* save)
 {
     double center[clust_num][COL];
     double center_backup[clust_num][COL];
-    int    counter[clust_num];//how many points of each tag
+    int    count=0,median;//how many points of each tag
     int    i,j,k,t,p,flag=1,modified_count;
     double sum,pick_max[clust_num];
-
+    Array arr[MAX_NUM];
 
     for(i=0; i<clust_num; i++)
     {
@@ -18,9 +29,7 @@ void means_cluster(int clust_num,saved *save)
         {
             center[i][j]=save[i].val[j];
             center_backup[i][j]=save[i].val[j];
-            // printf("means.c  center=%lf,",center[i][j]);
         }
-        printf("\n");
 
     }
 
@@ -44,38 +53,42 @@ void means_cluster(int clust_num,saved *save)
                     p=t;
                 }
             }
-
             data[i].tag=p;
+
         }
 
 
-        //initial center to zero
+        //for each tag,sort the elements
         for(i=0; i<clust_num; i++)
         {
-            for(j=0; j<COL; j++)
+            count=0;
+            for(j=0; j<ROW; j++)
             {
-                center[i][j]=0;
+                if(data[j].tag==i)
+                {
+                    arr[count].a=data[j].val[0];
+                    arr[count].index=j;
+                    count++;
+                }
             }
-            counter[i]=0;
-        }
-        //recalculate the central points
-        for(i=0; i<ROW; i++)
-        {
-            for(j=0; j<COL; j++)
-            {
-                center[data[i].tag][j]+=data[i].val[j];
-            }
-            counter[data[i].tag]++;//count the numbers of each tag
-        }
 
-        for(i=0; i<clust_num; i++)
-        {
-            for(j=0; j<COL; j++)
+            //sort them!
+
+            qsort(&arr,count,sizeof(Array),cmp);
+            for(j=0;j<count;j++)
             {
-                center[i][j]/=counter[i];
-                //printf(" center=%f,center_backup=%f",center[i][j],center_backup[i][j]);
+             //   printf("arr[%d].a=%lf,index=%d\n",j,arr[j].a,arr[j].index);
             }
-        }//end
+
+            median=(count-1)/2;
+          //  printf("count=%d,median=%d\n",count,median);
+
+            for(k=0; k<COL; k++)
+            {
+                center[i][k]=data[arr[median].index].val[k];
+            }
+        }
+        //end
 
 
         // if each element in center_backup equals to center,
@@ -100,7 +113,7 @@ void means_cluster(int clust_num,saved *save)
     }
     while(flag);
 
-/*
+    /*
     //debug info
     for(i=0; i<ROW; i++)
     {
@@ -113,8 +126,7 @@ void means_cluster(int clust_num,saved *save)
         //printf(",count=%d\n\n",counter[i]);
     }
     //end debuf info
+
     */
 
-    free(save);
 }
-
